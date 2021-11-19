@@ -24,7 +24,7 @@ endif()
 FetchContent_Declare(
   gutils
   GIT_REPOSITORY https://github.com/lord-ka/gutils.git
-  GIT_TAG        release-1.0.1
+  GIT_TAG        release-1.0.2
 )
 
 FetchContent_GetProperties(gutils)

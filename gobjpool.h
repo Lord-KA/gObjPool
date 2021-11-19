@@ -6,10 +6,9 @@
 
 #include "gutils.h"
 
-// typedef int GOBJPOOL_TYPE;  //TODO remove
-
 static const size_t GOBJPOOL_START_CAPACITY = 2;
 static const size_t GOBJPOOL_CAPACITY_EXPND_FACTOR = 2;
+static const size_t GOBJPOOL_MAX_MSG_LEN = 64;
 
 struct gObjPool_Node 
 {
@@ -25,7 +24,22 @@ enum gObjPool_status
     gObjPool_status_BadCapacity,
     gObjPool_status_BadStructPtr,
     gObjPool_status_BadId,
+    gObjPool_status_Cnt,
 };
+
+const char gObjPool_statusMsg[gObjPool_status_Cnt][GOBJPOOL_MAX_MSG_LEN] = {
+    "OK",
+    "Allocator error",
+    "Error: bad capacity detected",
+    "Error: bad self ptr provided",
+    "Error: bad Id provided",
+};
+
+#ifndef NLOGS
+#define GOBJPOOL_ASSERT_LOG(expr, errCode) ASSERT_LOG((expr), (errCode), gObjPool_statusMsg[errCode], pool->logStream)
+#else
+#define GOBJPOOL_ASSERT_LOG(expr, errCode) ASSERT_LOG((expr), (errCode), gObjPool_statusMsg[errCode], NULL)
+#endif
 
 struct gObjPool 
 {
@@ -61,10 +75,9 @@ gObjPool_status gObjPool_ctor(gObjPool *pool, size_t newCapacity, FILE *newLogSt
  
     pool->data = (gObjPool_Node*)calloc(pool->capacity, sizeof(gObjPool_Node));
     if (pool->data == NULL) {
-        fprintf(pool->logStream, "ERROR: Failed to allocate memory!\n");
         pool->capacity  = -1;
         pool->last_free = -1;
-        return gObjPool_status_AllocErr;
+        GOBJPOOL_ASSERT_LOG(false, gObjPool_status_AllocErr);
     }
     
     for (size_t i = 0; i < pool->capacity - 1; ++i) {
@@ -80,11 +93,7 @@ gObjPool_status gObjPool_ctor(gObjPool *pool, size_t newCapacity, FILE *newLogSt
 
 gObjPool_status gObjPool_dtor(gObjPool *pool)
 {
-    if (!gPtrValid(pool)) {                                          
-        fprintf(stderr, "ERROR: bad structure ptr provided to dtor!\n");
-        return gObjPool_status_BadStructPtr;                         
-    }                                                                
-
+    ASSERT_LOG(gPtrValid(pool), gObjPool_status_BadStructPtr, "ERROR: bad structure ptr provided to dtor!\n", stderr);
     free(pool->data);
     pool->data       = NULL;
     pool->capacity   = -1;
@@ -94,26 +103,16 @@ gObjPool_status gObjPool_dtor(gObjPool *pool)
 
 gObjPool_status gObjPool_refit(gObjPool *pool)
 {
-    if (!gPtrValid(pool)) {                                          
-        fprintf(stderr, "ERROR: bad structure ptr provided to refit!\n");
-        return gObjPool_status_BadStructPtr;                         
-    }                                                              
+    ASSERT_LOG(gPtrValid(pool), gObjPool_status_BadStructPtr, "ERROR: bad structure ptr provided to refit!\n", stderr);
     if (pool->last_free != -1)
         return gObjPool_status_OK;
 
-    if (pool->capacity == -1) {
-        fprintf(pool->logStream, "ERROR: bad capacity (was dtor used?)\n");
-        return gObjPool_status_BadCapacity;
-    }
-
+    GOBJPOOL_ASSERT_LOG(pool->capacity != -1, gObjPool_status_BadCapacity);
     
     size_t newCapacity = pool->capacity * GOBJPOOL_CAPACITY_EXPND_FACTOR;
     gObjPool_Node *newData = (gObjPool_Node*)realloc(pool->data, newCapacity * sizeof(gObjPool_Node));
+    GOBJPOOL_ASSERT_LOG(newData != NULL, gObjPool_status_AllocErr);
 
-    if (newData == NULL) {
-        fprintf(pool->logStream, "ERROR: Failed to reallocate memory!\n");
-        return gObjPool_status_AllocErr;
-    }
     pool->data = newData;
     pool->capacity = newCapacity;
     for (size_t i = pool->capacity / 2; i < pool->capacity - 1; ++i) {
@@ -129,11 +128,7 @@ gObjPool_status gObjPool_refit(gObjPool *pool)
 
 gObjPool_status gObjPool_alloc(gObjPool *pool, size_t *result_id)
 {
-    if (!gPtrValid(pool)) {                                          
-        fprintf(stderr, "ERROR: bad structure ptr provided to alloc!\n");
-        return gObjPool_status_BadStructPtr;                         
-    }                                                                
-
+    ASSERT_LOG(gPtrValid(pool), gObjPool_status_BadStructPtr, "ERROR: bad structure ptr provided to alloc!\n", stderr);
     pool->status = gObjPool_refit(pool);
     if (pool->status != gObjPool_status_OK)
         return pool->status;
@@ -149,13 +144,9 @@ gObjPool_status gObjPool_alloc(gObjPool *pool, size_t *result_id)
 
 gObjPool_status gObjPool_free(gObjPool *pool, size_t id)
 {
-    if (!gPtrValid(pool)) {                                          
-        fprintf(stderr, "ERROR: bad structure ptr provided to free!\n");
-        return gObjPool_status_BadStructPtr;                         
-    }                                
+    ASSERT_LOG(gPtrValid(pool), gObjPool_status_BadStructPtr, "ERROR: bad structure ptr provided to free!\n", stderr);
 
-    if (id > pool->capacity || !(pool->data[id].allocated))
-        return gObjPool_status_BadId;
+    GOBJPOOL_ASSERT_LOG((id <= pool->capacity && (pool->data[id].allocated)), gObjPool_status_BadId);
 
     pool->data[id].next = pool->last_free;
     pool->last_free = id;
@@ -167,16 +158,10 @@ gObjPool_status gObjPool_free(gObjPool *pool, size_t id)
 
 gObjPool_status gObjPool_get(const gObjPool *pool, const size_t id, GOBJPOOL_TYPE **returnPtr)
 {
-    if (!gPtrValid(pool)) {                                          
-        fprintf(stderr, "ERROR: bad structure ptr provided to get!\n");
-        return gObjPool_status_BadStructPtr;                         
-    }                                                                
+    ASSERT_LOG(gPtrValid(pool), gObjPool_status_BadStructPtr, "ERROR: bad structure ptr provided to get!\n", stderr);
+   
+    GOBJPOOL_ASSERT_LOG((id <= pool->capacity && (pool->data[id].allocated)), gObjPool_status_BadId);
     
-    if (id > pool->capacity) {
-        fprintf(pool->logStream, "ERROR: bad id provided to get!\n");
-        return  gObjPool_status_BadId;
-    }
-
     *returnPtr = &pool->data[id].val;
    
     return gObjPool_status_OK;
@@ -184,15 +169,10 @@ gObjPool_status gObjPool_get(const gObjPool *pool, const size_t id, GOBJPOOL_TYP
 
 gObjPool_status gObjPool_dumpFree(gObjPool *pool, FILE *newLogStream)
 {
-    FILE *out;                                                   
+    ASSERT_LOG(gPtrValid(pool), gObjPool_status_BadStructPtr, "ERROR: bad structure ptr provided to dump!\n", stderr);
+    FILE *out = stderr;                                                   
     if (gPtrValid(newLogStream))
         out = newLogStream;
-    else
-        out = stderr;
-    if (!gPtrValid(pool)) {                                          
-        fprintf(out, "ERROR: bad structure ptr provided to ctor!\n");
-        return gObjPool_status_BadStructPtr;                         
-    }   
     if (gPtrValid(pool->logStream) && newLogStream == NULL)
         out = pool->logStream;
 

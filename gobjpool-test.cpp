@@ -1,5 +1,6 @@
 typedef int GOBJPOOL_TYPE;  //TODO remove
 
+#define NLOGS
 #include "gobjpool.h"
 #include "gtest/gtest.h"
 
@@ -81,16 +82,17 @@ TEST(Auto, Stability)
 {
     gObjPool poolStruct;
     gObjPool *pool = &poolStruct;
-
+    
     gObjPool_ctor(pool, -1, NULL);
     size_t id = 0;
     
     for (size_t i = 0; i < 10000; ++i) {
         if (rnd() % 5 != 1) {
-            gObjPool_alloc(pool, &id);
+            EXPECT_FALSE(gObjPool_alloc(pool, &id));
         }
         else {
-            gObjPool_free(pool, rnd() % pool->capacity);
+            gObjPool_status status = gObjPool_free(pool, rnd() % pool->capacity);
+            EXPECT_TRUE(status == gObjPool_status_OK || status == gObjPool_status_BadId);
         }
     }
 
