@@ -13,13 +13,13 @@ $ make
 Add code below to your CMakeLists.txt and include "gobjpool.h"
 ```
 FetchContent_Declare(
-  gObjPool
+  objpool
   GIT_REPOSITORY https://github.com/Lord-KA/gObjPool.git
   GIT_TAG        release-1.X
 )
-if(NOT gObjPool_POPULATED)
-  FetchContent_Populate(gObjPool)
-  include_directories(${gObjPool_SOURCE_DIR})
+if(NOT gobjpool_POPULATED)
+  FetchContent_Populate(gobjpool)
+  include_directories(${gobjpool_SOURCE_DIR})
 endif()
 ```
 You have to pre-define `GOBJPOOL_TYPE` with macro or `typedef` before including the header
