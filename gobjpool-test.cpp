@@ -16,6 +16,7 @@ TEST(manual, basic)
     // gObjPool_dumpFree(&pool, NULL);
 
 
+    int *data = NULL;
     size_t id;
     gObjPool_alloc(&pool, &id);
     EXPECT_EQ(id, 0);
@@ -49,22 +50,47 @@ TEST(manual, basic)
 
     gObjPool_alloc(&pool, &id);
     EXPECT_EQ(id, 5);
+    data = NULL;
+    gObjPool_get(&pool, id, &data);
+    gObjPool_getId(&pool, data, &id);
+    EXPECT_EQ(id, 5);
+
 
 
     gObjPool_alloc(&pool, &id);
     EXPECT_EQ(id, 3);
+    data = NULL;
+    gObjPool_get(&pool, id, &data);
+    gObjPool_getId(&pool, data, &id);
+    EXPECT_EQ(id, 3);
+
+
 
 
     gObjPool_alloc(&pool, &id);
+    EXPECT_EQ(id, 6); 
+    data = NULL;
+    gObjPool_get(&pool, id, &data);
+    gObjPool_getId(&pool, data, &id);
     EXPECT_EQ(id, 6);
 
 
     gObjPool_alloc(&pool, &id);
     EXPECT_EQ(id, 7);
+    data = NULL;
+    gObjPool_get(&pool, id, &data);
+    gObjPool_getId(&pool, data, &id);
+    EXPECT_EQ(id, 7);
     
     // gObjPool_dumpFree(&pool, NULL);
 
     gObjPool_alloc(&pool, &id);
+
+    EXPECT_EQ(id, 8);
+
+    data = NULL;
+    gObjPool_get(&pool, id, &data);
+    gObjPool_getId(&pool, data, &id);
     EXPECT_EQ(id, 8);
 
     // gObjPool_dumpFree(&pool, NULL);

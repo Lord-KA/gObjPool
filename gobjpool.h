@@ -13,8 +13,8 @@ static const size_t GOBJPOOL_MAX_MSG_LEN = 64;
 struct gObjPool_Node 
 {
     size_t next;
-    GOBJPOOL_TYPE val;
     bool allocated;
+    GOBJPOOL_TYPE val;
 } typedef gObjPool_Node;
 
 enum gObjPool_status 
@@ -164,6 +164,17 @@ gObjPool_status gObjPool_get(const gObjPool *pool, const size_t id, GOBJPOOL_TYP
     
     *returnPtr = &pool->data[id].val;
    
+    return gObjPool_status_OK;
+}
+
+gObjPool_status gObjPool_getId(const gObjPool *pool, GOBJPOOL_TYPE *ptr, size_t *id)
+{
+    ASSERT_LOG(gPtrValid(pool), gObjPool_status_BadStructPtr, "ERROR: bad structure ptr provided to getId!\n", stderr);
+    ASSERT_LOG(gPtrValid(ptr),  gObjPool_status_BadStructPtr, "ERROR: bad data ptr provided to getId!\n",      stderr);
+    ASSERT_LOG(gPtrValid(id),   gObjPool_status_BadStructPtr, "ERROR: bad id ptr provided to getId!\n",        stderr);
+
+    *id = (gObjPool_Node*)((void*)ptr - (sizeof(gObjPool_Node) - sizeof(GOBJPOOL_TYPE))) - pool->data;
+       
     return gObjPool_status_OK;
 }
 
