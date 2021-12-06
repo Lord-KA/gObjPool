@@ -1,22 +1,35 @@
 #ifndef GOBJPOOL_H
 #define GOBJPOOL_H
 
+/**
+ * @file Header with generalized Object Pool structure
+ */
+
 #include <stdio.h>
 #include <malloc.h>
 
 #include "gutils.h"
 
-static const size_t GOBJPOOL_START_CAPACITY = 2;
-static const size_t GOBJPOOL_CAPACITY_EXPND_FACTOR = 2;
-static const size_t GOBJPOOL_MAX_MSG_LEN = 64;
 
+static const size_t GOBJPOOL_START_CAPACITY        = 2;     /// capacity with which pool starts with
+static const size_t GOBJPOOL_CAPACITY_EXPND_FACTOR = 2;     /// factor of capacity expand at refit
+static const size_t GOBJPOOL_MAX_MSG_LEN           = 64;    /// max error message lenght
+
+
+/**
+ * @brief basic objPool node struct with user provided data
+ */
 struct gObjPool_Node 
 {
-    size_t next;
-    bool allocated;
-    GOBJPOOL_TYPE val;
+    size_t next;                /// id of the next non-allocated node in the pool
+    bool allocated;             /// flag if the node is allocated
+    GOBJPOOL_TYPE val;          /// user-provided data
 } typedef gObjPool_Node;
 
+
+/**
+ * @brief status codes for gObjPool
+ */
 enum gObjPool_status 
 {
     gObjPool_status_OK,
@@ -27,6 +40,10 @@ enum gObjPool_status
     gObjPool_status_Cnt,
 };
 
+
+/**
+ * @brief status codes explanations
+ */
 const char gObjPool_statusMsg[gObjPool_status_Cnt][GOBJPOOL_MAX_MSG_LEN] = {
     "OK",
     "Allocator error",
@@ -35,12 +52,20 @@ const char gObjPool_statusMsg[gObjPool_status_Cnt][GOBJPOOL_MAX_MSG_LEN] = {
     "Error: bad Id provided",
 };
 
+
+/**
+ * @brief local version of ASSERT_LOG macro
+ */
 #ifndef NLOGS
 #define GOBJPOOL_ASSERT_LOG(expr, errCode) ASSERT_LOG((expr), (errCode), gObjPool_statusMsg[errCode], pool->logStream)
 #else
 #define GOBJPOOL_ASSERT_LOG(expr, errCode) ASSERT_LOG((expr), (errCode), gObjPool_statusMsg[errCode], NULL)
 #endif
 
+
+/**
+ * @brief the main objPool structure
+ */
 struct gObjPool 
 {
     gObjPool_Node *data;
@@ -51,6 +76,13 @@ struct gObjPool
 } typedef gObjPool;
 
 
+/**
+ * @brief gObjPool constructor
+ * @param pool pointer to structure to construc onto
+ * @param newCapacity starting capacity, could be -1, than START_CAPACITY is used
+ * @prarm newLogStream stream for logs, if NULL, than `stderr`
+ * @return gObjPool status code
+ */
 gObjPool_status gObjPool_ctor(gObjPool *pool, size_t newCapacity, FILE *newLogStream) 
 {
     if (!gPtrValid(pool)) {                                          
@@ -91,6 +123,12 @@ gObjPool_status gObjPool_ctor(gObjPool *pool, size_t newCapacity, FILE *newLogSt
     return gObjPool_status_OK;
 }
 
+
+/**
+ * @brief gObjPool destructor
+ * @param pool pointer to structure to destruct
+ * @return gObjPool status code
+ */
 gObjPool_status gObjPool_dtor(gObjPool *pool)
 {
     ASSERT_LOG(gPtrValid(pool), gObjPool_status_BadStructPtr, "ERROR: bad structure ptr provided to dtor!\n", stderr);
@@ -101,6 +139,12 @@ gObjPool_status gObjPool_dtor(gObjPool *pool)
     return gObjPool_status_OK;
 }
 
+
+/**
+ * @brief expands pool if no free elements
+ * @param pool pointer to gObjPool structure 
+ * @return gObjPool status code
+ */
 gObjPool_status gObjPool_refit(gObjPool *pool)
 {
     ASSERT_LOG(gPtrValid(pool), gObjPool_status_BadStructPtr, "ERROR: bad structure ptr provided to refit!\n", stderr);
@@ -126,6 +170,13 @@ gObjPool_status gObjPool_refit(gObjPool *pool)
     return gObjPool_status_OK;
 }
 
+
+/**
+ * @brief allocate element from the pool
+ * @param pool pointer to gObjPool structure 
+ * @param result_id pointer to write id of the allocated node to
+ * @return gObjPool status code
+ */
 gObjPool_status gObjPool_alloc(gObjPool *pool, size_t *result_id)
 {
     ASSERT_LOG(gPtrValid(pool), gObjPool_status_BadStructPtr, "ERROR: bad structure ptr provided to alloc!\n", stderr);
@@ -142,6 +193,13 @@ gObjPool_status gObjPool_alloc(gObjPool *pool, size_t *result_id)
     return gObjPool_status_OK;
 }
 
+
+/**
+ * @brief free element to the pool
+ * @param pool pointer to gObjPool structure 
+ * @param id id of a node to free
+ * @return gObjPool status code
+ */
 gObjPool_status gObjPool_free(gObjPool *pool, size_t id)
 {
     ASSERT_LOG(gPtrValid(pool), gObjPool_status_BadStructPtr, "ERROR: bad structure ptr provided to free!\n", stderr);
@@ -156,6 +214,14 @@ gObjPool_status gObjPool_free(gObjPool *pool, size_t id)
     return gObjPool_status_OK;
 }
 
+
+/**
+ * @brief get element from the pool
+ * @param pool pointer to gObjPool structure 
+ * @param id id of the desired node
+ * @param returnPtr pointer to write write pointer to the data
+ * @return gObjPool status code
+ */
 gObjPool_status gObjPool_get(const gObjPool *pool, const size_t id, GOBJPOOL_TYPE **returnPtr)
 {
     ASSERT_LOG(gPtrValid(pool), gObjPool_status_BadStructPtr, "ERROR: bad structure ptr provided to get!\n", stderr);
@@ -167,6 +233,13 @@ gObjPool_status gObjPool_get(const gObjPool *pool, const size_t id, GOBJPOOL_TYP
     return gObjPool_status_OK;
 }
 
+/**
+ * @brief gets id of a node by pointer to data
+ * @param pool pointer to gObjPool structure 
+ * @param ptr pointer to data of the desired node
+ * @param id pointer to write the id to
+ * @return gObjPool status code
+ */
 gObjPool_status gObjPool_getId(const gObjPool *pool, GOBJPOOL_TYPE *ptr, size_t *id)
 {
     ASSERT_LOG(gPtrValid(pool), gObjPool_status_BadStructPtr, "ERROR: bad structure ptr provided to getId!\n", stderr);
@@ -178,6 +251,13 @@ gObjPool_status gObjPool_getId(const gObjPool *pool, GOBJPOOL_TYPE *ptr, size_t 
     return gObjPool_status_OK;
 }
 
+
+/**
+ * @param dumps in line all free nodes
+ * @param pool pointer to gObjPool structure 
+ * @param newLogStream stream to dump to, if `newLogStream == NULL` writes to `pool.logStream`
+ * @return gObjPool status code
+ */
 gObjPool_status gObjPool_dumpFree(gObjPool *pool, FILE *newLogStream)
 {
     ASSERT_LOG(gPtrValid(pool), gObjPool_status_BadStructPtr, "ERROR: bad structure ptr provided to dump!\n", stderr);

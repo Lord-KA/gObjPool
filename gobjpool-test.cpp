@@ -1,4 +1,4 @@
-typedef int GOBJPOOL_TYPE;  //TODO remove
+typedef int GOBJPOOL_TYPE;  
 
 #define NLOGS
 #include "gobjpool.h"
@@ -7,7 +7,6 @@ typedef int GOBJPOOL_TYPE;  //TODO remove
 #include <random>
 
 std::mt19937 rnd(179);
-
 
 TEST(manual, basic)
 {
@@ -25,10 +24,10 @@ TEST(manual, basic)
     EXPECT_EQ(id, 1);
 
     int *ptr = NULL;
-    // gObjPool_get(&pool, 4, &ptr);
-    // printf("ptr = %p\n", ptr);
-    // gObjPool_dumpFree(&pool, NULL);
 
+    #ifndef NLOGS
+        gObjPool_dumpFree(&pool, NULL);
+    #endif
 
     gObjPool_alloc(&pool, &id);
     EXPECT_EQ(id, 2);
@@ -40,12 +39,16 @@ TEST(manual, basic)
 
     gObjPool_alloc(&pool, &id);
     EXPECT_EQ(id, 5);
-    // gObjPool_dumpFree(&pool, NULL);
+    #ifndef NLOGS
+        gObjPool_dumpFree(&pool, NULL);
+    #endif
 
 
     gObjPool_free(&pool, 3);
     gObjPool_free(&pool, 5);
-    // gObjPool_dumpFree(&pool, NULL);
+    #ifndef NLOGS
+        gObjPool_dumpFree(&pool, NULL);
+    #endif
 
 
     gObjPool_alloc(&pool, &id);
@@ -56,15 +59,12 @@ TEST(manual, basic)
     EXPECT_EQ(id, 5);
 
 
-
     gObjPool_alloc(&pool, &id);
     EXPECT_EQ(id, 3);
     data = NULL;
     gObjPool_get(&pool, id, &data);
     gObjPool_getId(&pool, data, &id);
     EXPECT_EQ(id, 3);
-
-
 
 
     gObjPool_alloc(&pool, &id);
@@ -82,7 +82,9 @@ TEST(manual, basic)
     gObjPool_getId(&pool, data, &id);
     EXPECT_EQ(id, 7);
     
-    // gObjPool_dumpFree(&pool, NULL);
+    #ifndef NLOGS
+        gObjPool_dumpFree(&pool, NULL);
+    #endif
 
     gObjPool_alloc(&pool, &id);
 
@@ -93,13 +95,17 @@ TEST(manual, basic)
     gObjPool_getId(&pool, data, &id);
     EXPECT_EQ(id, 8);
 
-    // gObjPool_dumpFree(&pool, NULL);
+    #ifndef NLOGS
+        gObjPool_dumpFree(&pool, NULL);
+    #endif
 
     gObjPool_free(&pool, 1);
     gObjPool_free(&pool, 7);
     gObjPool_free(&pool, 3);
     gObjPool_free(&pool, 5);
-    // gObjPool_dumpFree(&pool, NULL);
+    #ifndef NLOGS
+        gObjPool_dumpFree(&pool, NULL);
+    #endif
 
     gObjPool_dtor(&pool);
 }
@@ -109,18 +115,25 @@ TEST(Auto, Stability)
     gObjPool poolStruct;
     gObjPool *pool = &poolStruct;
     
-    gObjPool_ctor(pool, -1, NULL);
+    gObjPool_status status = gObjPool_ctor(pool, -1, NULL);
+    EXPECT_TRUE(status == gObjPool_status_OK || status == gObjPool_status_BadId);
     size_t id = 0;
     
-    for (size_t i = 0; i < 10000; ++i) {
+    for (size_t i = 0; i < 100000; ++i) {
         if (rnd() % 5 != 1) {
-            EXPECT_FALSE(gObjPool_alloc(pool, &id));
-        }
-        else {
-            gObjPool_status status = gObjPool_free(pool, rnd() % pool->capacity);
+            status = gObjPool_alloc(pool, &id);
             EXPECT_TRUE(status == gObjPool_status_OK || status == gObjPool_status_BadId);
         }
+        else {
+            status = gObjPool_free(pool, rnd() % pool->capacity);
+            EXPECT_TRUE(status == gObjPool_status_OK || status == gObjPool_status_BadId);
+        }
+        GOBJPOOL_TYPE *data = NULL;
+        status = gObjPool_get(pool, rnd() % pool->capacity, &data);
+        EXPECT_TRUE(status == gObjPool_status_OK || status == gObjPool_status_BadId);
+
     }
 
-    gObjPool_dtor(pool);
+    status = gObjPool_dtor(pool);
+    EXPECT_TRUE(status == gObjPool_status_OK || status == gObjPool_status_BadId);
 }

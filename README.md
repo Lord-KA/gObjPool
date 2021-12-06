@@ -26,13 +26,12 @@ You have to pre-define `GOBJPOOL_TYPE` with macro or `typedef` before including 
 
 ## DONE
 1. Generalized objPool structure with automatic refitting (reallocation)
-2. Basic unit tests
+2. Unit Tests (gTest)
 3. CMake config
 4. Github release
+5. Basic Github CI
+6. Doxigen docs
 
 ## TODO
-1. Improve unit testing
-2. Check coverage
-3. Add Github CI
-4. Add C-style pseudo-templates
-5. Add docs
+1. Check coverage
+2. Add C-style pseudo-templates
