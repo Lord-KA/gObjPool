@@ -212,6 +212,7 @@ gObjPool_status gObjPool_alloc(gObjPool *pool, size_t *result_id)
     *result_id = pool->last_free;
     pool->last_free = pool->data[pool->last_free].next;
 
+    pool->data[*result_id].val = {};
 
     return gObjPool_status_OK;
 }
