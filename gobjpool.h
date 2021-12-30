@@ -64,6 +64,12 @@ const char gObjPool_statusMsg[gObjPool_status_Cnt][GOBJPOOL_MAX_MSG_LEN] = {
 
 
 /**
+ * @brief macro for handy id check
+ */
+#define GOBJPOOL_ID_VAL(id) GOBJPOOL_ASSERT_LOG(gObjPool_idValid(pool, id), gObjPool_status_BadId)
+
+
+/**
  * @brief the main objPool structure
  */
 struct gObjPool 
@@ -74,6 +80,23 @@ struct gObjPool
     gObjPool_status status;
     FILE *logStream;
 } typedef gObjPool;
+
+
+/**
+ * @brief id check mainly for external modules
+ * @param pool pointer to structure to construc onto
+ * @param id id to check
+ * @return true if id is valid, false otherwise
+ */
+bool gObjPool_idValid(const gObjPool *pool, const size_t id) 
+{
+    assert(gPtrValid(pool));
+    if (id >= pool->capacity)
+        return false;
+    if (!pool->data[id].allocated)
+        return false;
+    return true;
+}
 
 
 /**
@@ -203,8 +226,7 @@ gObjPool_status gObjPool_alloc(gObjPool *pool, size_t *result_id)
 gObjPool_status gObjPool_free(gObjPool *pool, size_t id)
 {
     ASSERT_LOG(gPtrValid(pool), gObjPool_status_BadStructPtr, "ERROR: bad structure ptr provided to free!\n", stderr);
-
-    GOBJPOOL_ASSERT_LOG((id <= pool->capacity && (pool->data[id].allocated)), gObjPool_status_BadId);
+    GOBJPOOL_ID_VAL(id);
 
     pool->data[id].next = pool->last_free;
     pool->last_free = id;
@@ -225,8 +247,7 @@ gObjPool_status gObjPool_free(gObjPool *pool, size_t id)
 gObjPool_status gObjPool_get(const gObjPool *pool, const size_t id, GOBJPOOL_TYPE **returnPtr)
 {
     ASSERT_LOG(gPtrValid(pool), gObjPool_status_BadStructPtr, "ERROR: bad structure ptr provided to get!\n", stderr);
-   
-    GOBJPOOL_ASSERT_LOG((id <= pool->capacity && (pool->data[id].allocated)), gObjPool_status_BadId);
+    GOBJPOOL_ID_VAL(id);
     
     *returnPtr = &pool->data[id].val;
    
