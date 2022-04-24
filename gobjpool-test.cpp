@@ -1,4 +1,4 @@
-typedef int GOBJPOOL_TYPE;  
+typedef int GOBJPOOL_TYPE;
 
 #define NLOGS
 #include "gobjpool.h"
@@ -68,7 +68,7 @@ TEST(manual, basic)
 
 
     gObjPool_alloc(&pool, &id);
-    EXPECT_EQ(id, 6); 
+    EXPECT_EQ(id, 6);
     data = NULL;
     gObjPool_get(&pool, id, &data);
     gObjPool_getId(&pool, data, &id);
@@ -81,7 +81,7 @@ TEST(manual, basic)
     gObjPool_get(&pool, id, &data);
     gObjPool_getId(&pool, data, &id);
     EXPECT_EQ(id, 7);
-    
+
     #ifndef NLOGS
         gObjPool_dumpFree(&pool, NULL);
     #endif
@@ -112,13 +112,14 @@ TEST(manual, basic)
 
 TEST(Auto, Stability)
 {
+    assert(false);
     gObjPool poolStruct;
     gObjPool *pool = &poolStruct;
-    
+
     gObjPool_status status = gObjPool_ctor(pool, -1, NULL);
     EXPECT_TRUE(status == gObjPool_status_OK || status == gObjPool_status_BadId);
     size_t id = 0;
-    
+
     for (size_t i = 0; i < 100000; ++i) {
         if (rnd() % 5 != 1) {
             status = gObjPool_alloc(pool, &id);
