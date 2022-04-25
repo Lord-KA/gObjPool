@@ -75,6 +75,8 @@ const char gObjPool_statusMsg[gObjPool_status_Cnt][GOBJPOOL_MAX_MSG_LEN] = {
 
 #define GET_NODE_UNSAFE(macroId) (pool->pages[(macroId) / GOBJPOOL_PAGE_CAP] + ((macroId) % GOBJPOOL_PAGE_CAP))
 
+#define GOBJPOOL_GET_NODE_UNSAFE(macroPool, macroId) ((macroPool)->pages[(macroId) / GOBJPOOL_PAGE_CAP] + ((macroId) % GOBJPOOL_PAGE_CAP))
+
 #define GOBJPOOL_VAL_BY_ID_UNSAFE(macroPool, macroId) &((macroPool)->pages[(macroId) / GOBJPOOL_PAGE_CAP][(macroId) % GOBJPOOL_PAGE_CAP].val)
 
 #define GOBJPOOL_CHECK_ALLOC(expr) ({  \
@@ -344,5 +346,7 @@ static gObjPool_status gObjPool_dumpFree(gObjPool *pool, FILE *newLogStream)
 
     return gObjPool_status_OK;
 }
+
+#undef GET_NODE_UNSAFE
 
 #endif /* GOBJPOOL_H */
