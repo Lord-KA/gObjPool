@@ -1,4 +1,5 @@
-typedef int GOBJPOOL_TYPE;
+#include <iostream>
+typedef size_t GOBJPOOL_TYPE;
 
 #define NLOGS
 #include "gobjpool.h"
@@ -15,7 +16,7 @@ TEST(manual, basic)
     // gObjPool_dumpFree(&pool, NULL);
 
 
-    int *data = NULL;
+    GOBJPOOL_TYPE *data = NULL;
     size_t id;
     gObjPool_alloc(&pool, &id);
     EXPECT_EQ(id, 0);
@@ -23,7 +24,7 @@ TEST(manual, basic)
     gObjPool_alloc(&pool, &id);
     EXPECT_EQ(id, 1);
 
-    int *ptr = NULL;
+    GOBJPOOL_TYPE *ptr = NULL;
 
     #ifndef NLOGS
         gObjPool_dumpFree(&pool, NULL);
@@ -112,29 +113,47 @@ TEST(manual, basic)
 
 TEST(Auto, Stability)
 {
-    assert(false);
     gObjPool poolStruct;
     gObjPool *pool = &poolStruct;
 
+    std::vector<size_t> check;
+
     gObjPool_status status = gObjPool_ctor(pool, -1, NULL);
-    EXPECT_TRUE(status == gObjPool_status_OK || status == gObjPool_status_BadId);
+    EXPECT_EQ(status, gObjPool_status_OK);
     size_t id = 0;
 
-    for (size_t i = 0; i < 100000; ++i) {
-        if (rnd() % 5 != 1) {
+    for (size_t i = 0; i < 300000; ++i) {
+        if (rnd() % 3 != 1) {
             status = gObjPool_alloc(pool, &id);
-            EXPECT_TRUE(status == gObjPool_status_OK || status == gObjPool_status_BadId);
+            EXPECT_EQ(status, gObjPool_status_OK);
+            check.push_back(id);
+
+            GOBJPOOL_TYPE *data = NULL;
+            status = gObjPool_get(pool, id, &data);
+            EXPECT_EQ(status, gObjPool_status_OK);
+            *data = id;
         }
         else {
-            status = gObjPool_free(pool, rnd() % pool->capacity);
-            EXPECT_TRUE(status == gObjPool_status_OK || status == gObjPool_status_BadId);
+            size_t pos = rnd() % check.size();
+            if (check.size() > 0) {
+                status = gObjPool_free(pool, check[pos]);
+                EXPECT_EQ(status, gObjPool_status_OK);
+                check.erase(check.begin() + pos);
+            }
         }
-        GOBJPOOL_TYPE *data = NULL;
-        status = gObjPool_get(pool, rnd() % pool->capacity, &data);
-        EXPECT_TRUE(status == gObjPool_status_OK || status == gObjPool_status_BadId);
-
+        if (check.size() > 0) {
+            size_t pos = rnd() % check.size();
+            GOBJPOOL_TYPE *data = NULL;
+            status = gObjPool_get(pool, check[pos], &data);
+            EXPECT_EQ(status, gObjPool_status_OK);
+            EXPECT_EQ(*data, check[pos]);
+        }
     }
+    for (size_t i = 0; i < check.size(); ++i)
+        EXPECT_EQ(gObjPool_free(pool, check[i]), gObjPool_status_OK);
+
+    EXPECT_EQ(pool->capacity, pool->allocated_pages * GOBJPOOL_PAGE_CAP);
 
     status = gObjPool_dtor(pool);
-    EXPECT_TRUE(status == gObjPool_status_OK || status == gObjPool_status_BadId);
+    EXPECT_EQ(status, gObjPool_status_OK);
 }

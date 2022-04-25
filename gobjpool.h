@@ -305,10 +305,13 @@ static gObjPool_status gObjPool_getId(const gObjPool *pool, GOBJPOOL_TYPE *ptr, 
     gObjPool_Node *node = (gObjPool_Node*)ptr;
     size_t page = -1;
     for (size_t i = 0; i < pool->allocated_pages; ++i) {
-        if (node - pool->pages[i] >= 0 && (page == -1 || pool->pages[i] - pool->pages[page] >= 0))
+        if (((node - pool->pages[i]) >= 0) && ((page == -1) || (pool->pages[i] - pool->pages[page] >= 0)))
                 page = i;
     }
-    *id = page * GOBJPOOL_PAGE_CAP + (node - pool->pages[page]);
+    if (page != -1)         //TODO for whatever reason while node >= pool->pages[page], node - pool->pages[page] is too big
+        *id = page * GOBJPOOL_PAGE_CAP + ((size_t)node - (size_t)pool->pages[page]) / sizeof(gObjPool_Node);
+    else
+        *id = -1;
 
     return gObjPool_status_OK;
 }
