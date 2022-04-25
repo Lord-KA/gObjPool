@@ -25,9 +25,9 @@ static const size_t GOBJPOOL_MAX_BLK_CNT = 1<<13;     /// max count of memory pa
  */
 struct gObjPool_Node
 {
+    GOBJPOOL_TYPE val;          /// user-provided data
     size_t next;                /// id of the next non-allocated node in the pool
     bool allocated;             /// flag if the node is allocated
-    GOBJPOOL_TYPE val;          /// user-provided data
 } typedef gObjPool_Node;
 
 static const size_t GOBJPOOL_PAGE_CAP = PAGE_SIZE / sizeof(gObjPool_Node);
@@ -74,6 +74,8 @@ const char gObjPool_statusMsg[gObjPool_status_Cnt][GOBJPOOL_MAX_MSG_LEN] = {
 #define GOBJPOOL_ID_VAL(id) GOBJPOOL_ASSERT_LOG(gObjPool_idValid(pool, id), gObjPool_status_BadId)
 
 #define GET_NODE_UNSAFE(macroId) (pool->pages[(macroId) / GOBJPOOL_PAGE_CAP] + ((macroId) % GOBJPOOL_PAGE_CAP))
+
+#define GOBJPOOL_VAL_BY_ID_UNSAFE(macroPool, macroId) &((macroPool)->pages[(macroId) / GOBJPOOL_PAGE_CAP][(macroId) % GOBJPOOL_PAGE_CAP].val)
 
 #define GOBJPOOL_CHECK_ALLOC(expr) ({  \
     void *ptr = (void*)(expr);          \
