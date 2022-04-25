@@ -16,7 +16,7 @@
 #define GOBJPOOL_BLK_ALLOC 2
 #endif
 
-static const size_t PAGE_SIZE = sysconf(_SC_PAGESIZE);
+static const size_t PAGE_SIZE = 1<<13;                /// == sysconf(_SC_PAGESIZE)
 static const size_t GOBJPOOL_MAX_MSG_LEN = 64;        /// max error message lenght
 static const size_t GOBJPOOL_MAX_BLK_CNT = 1<<13;     /// max count of memory pages
 
