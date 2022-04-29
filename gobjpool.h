@@ -16,7 +16,7 @@
 #define GOBJPOOL_BLK_ALLOC 2
 #endif
 
-static const size_t PAGE_SIZE = 1<<13;                /// == sysconf(_SC_PAGESIZE)
+static const size_t PAGE_SIZE = 4096;                 /// == sysconf(_SC_PAGESIZE)
 static const size_t GOBJPOOL_MAX_MSG_LEN = 64;        /// max error message lenght
 static const size_t GOBJPOOL_MAX_BLK_CNT = 1<<13;     /// max count of memory pages
 
@@ -148,6 +148,7 @@ static gObjPool_status gObjPool_ctor(gObjPool *pool, size_t newCapacity, FILE *n
         fprintf(out, "ERROR: bad structure ptr provided to ctor!\n");
         return gObjPool_status_BadStructPtr;
     }
+    assert(PAGE_SIZE == sysconf(_SC_PAGESIZE));
 
     if (newCapacity == -1 || newCapacity == 0)
         pool->capacity = GOBJPOOL_PAGE_CAP;
